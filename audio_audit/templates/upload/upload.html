@@ -1,0 +1,17 @@
+{% load static %}
+
+<!-- upload/templates/upload/upload.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Auditor</title>
+</head>
+<body>
+    
+    <h2>Play Audio</h2>
+    <audio controls>
+        <source src="{% static 'audio/essay_zig.wav' %}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!-- myapp/templates/myapp/my_template.html -->
+<!DOCTYPE html>
+<html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <title>audio audit flow</title>
+            <!-- Include jQuery from CDN -->
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        </head>
+        <body>
+            <h1>Choose Workspace</h1>
+            <select name="workspace" id="workspace">
+                {% for item in workspace_list %}
+                <option value="{{item}}">{{item}}</option>
+                {% endfor %}
+            </select>
+
+            <h1>Enter a youtube url and theme</h1>
+
+            <br>
+            <h1>OR</h1>
+            <br>
+            <h1>Enter a Prompt directly. (Theme is freeflow)</h1>
+            <textarea id="text_area" name="message" rows="10" cols="30"> </textarea>
+            <br />
+            <br />
+            <label for="speaker">Choose a speaker:</label>
+
+            <select name="speaker" id="speaker">
+                {% for item in speaker_list %}
+                <option value="{{item}}">{{item}}</option>
+                {% endfor %}
+            </select>
+            <br />
+            <br />
+            <button id="start_audit" type="submit">Start Audit</button>
+
+            <div id="audit_flow" style="display: none;">
+                <audio id="audio_player" controls></audio>
+                <button id="run_audio" type="submit">Run</button>
+                <button id="improve_from_feedback" type="submit">Improve</button>
+                <br />
+                <br />
+                <textarea id="save_file_text_area" name="message" rows="1" cols="30"> </textarea>
+                <button id="save_file" type="submit">save</button>
+
+                <h1>Start timestamp recorder</h1>
+
+                <table id="timestamp_table">
+                    <thead>
+                        <th>TimeStamp</th>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <script>
+                document.getElementById("start_audit").addEventListener("click", function () {
+                    endpoint = "api/get-audio/";
+                    const text = document.getElementById("transcript").value;
+                    const speaker_name = document.getElementById("speaker").value;
+                    const data = {
+                        text: text,
+                        speaker_name: speaker_name,
+                    };
+                    fetch(endpoint, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+
+                        body: JSON.stringify({ data }),
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            console.log("Success:", data);
+                            var audio_flow_element = document.getElementById("audit_flow");
+                            audio_flow_element.style.display = "block";
+                            var audioPlayer = document.getElementById("audio_player");
+                            audioPlayer.src = data.audio_url;
+                            assign_improve_event_listener();
+                            assign_save_file_listener();
+                        })
+                        .catch((error) => {
+                            console.log("Error:", error);
+                        });
+                });
+            </script>
+
+            <script>
+                function get_timestamps() {
+                    let timestamps = [];
+                    let rows = document.getElementById("timestamp_table").querySelectorAll("tbody tr");
+
+                    rows.forEach((row) => {
+                        let timestamp = row.cells[0].textContent; // Assuming timestamp is in the first column
+                        timestamps.push(timestamp);
+                    });
+                    return timestamps;
+                }
+
+                function assign_improve_event_listener() {
+                    console.log("Add event listener for improve");
+                    document.getElementById("improve_from_feedback").addEventListener("click", function () {
+                        var timestamps = get_timestamps();
+                        endpoint = "api/improve/";
+                        const speaker_name = document.getElementById("speaker").value;
+                        const data = {
+                            timestamps: timestamps,
+                        };
+                        fetch(endpoint, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+
+                            body: JSON.stringify({ data }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                var audioPlayer = document.getElementById("audio_player");
+                                audioPlayer.src = data.audio_url;
+                            })
+                            .catch((error) => {
+                                console.log("Error:", error);
+                            });
+                    });
+                }
+
+                function assign_save_file_listener() {
+                    console.log("Add save file listener");
+                    document.getElementById("save_file").addEventListener("click", function () {
+                        var timestamps = get_timestamps();
+                        endpoint = "api/save_file/";
+                        const workspace = document.getElementById("workspace").value;
+                        const filename = document.getElementById("save_file_text_area").value;
+                        const data = {
+                            workspace: workspace,
+                            filename: filename,
+                        };
+                        fetch(endpoint, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+
+                            body: JSON.stringify({ data }),
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                console.logs("Save success!");
+                            })
+                            .catch((error) => {
+                                console.log("Error:", error);
+                            });
+                    });
+                }
+            </script>
+
+            <script>
+                function get_now_timestamp() {
+                    var now = new Date();
+                    return now.getTime();
+                }
+
+                function clear_timestamp_table() {
+                    tbody_element = document.getElementById("timestamp_table").getElementsByTagName("tbody")[0];
+                    while (tbody_element.firstChild) {
+                        tbody_element.removeChild(tbody_element.firstChild);
+                    }
+                }
+
+                function play_audio() {
+                    audio_element = document.getElementById("audio_player");
+                    audio_element.play();
+                }
+
+                var run_audio_element = document.getElementById("run_audio");
+                run_audio_element.addEventListener("click", function () {
+                    clear_timestamp_table();
+                    play_audio();
+                    window.start_time = get_now_timestamp();
+
+                    document.addEventListener("keydown", function (event) {
+                        if (event.keyCode === 32) {
+                            console.log("Spacebar pressed!");
+                            table_body = document.getElementById("timestamp_table").getElementsByTagName("tbody")[0];
+                            var new_row = table_body.insertRow();
+                            var time_id = new_row.insertCell(0);
+                            time_id.textContent = (get_now_timestamp() - window.start_time) / 1000;
+                        }
+                    });
+                });
+            </script>
+
+            <script>
+                document.getElementById("speech_maker").addEventListener("click", function () {
+                    endpoint = "speech_maker/";
+                    var 
+                    window.location.href = 
+                });
+
+            </script>
+        </body>
+    </html>
+</html>

@@ -1,0 +1,17 @@
+<body>
+
+    <h1> {{ workspace}}</h1>
+
+    {% with workspace as workspace %}
+        {% with audio_context as audio_context %}
+            {% include  "workspace/control_panel/audio_content.html" %}
+        {% endwith %}
+    {% endwith %}
+
+    <!-- {% with workspace as workspace %}
+        {% with video_context as video_context %}
+            {% include "workspace/control_panel/video_content.html" %}
+        {% endwith %}
+    {% endwith %} -->
+
+</body>

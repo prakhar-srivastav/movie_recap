@@ -1,0 +1,383 @@
+<style>
+    .max-length {
+      max-width: 250px; /* Adjust as needed */
+      margin: 0 auto; /* Centering the text block if desired */
+    }
+  
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+  
+    table, th, td {
+      border: 1px solid black;
+    }
+  
+    td {
+      padding: 10px; /* Adds padding inside the cells */
+    }
+  </style>
+
+<style>
+    #video_container {
+        width: 0;
+        overflow: hidden;
+        transition: width 0.5s;
+    }
+    video {
+        width: 100%;
+        display: none; /* Hide video initially */
+    }
+</style>
+
+<tr id = "{{key}}">
+    <td id = "rank_td">
+        <p id = "rank_chapter">{{ cur_row.chapter }}/{{ cur_row.rank }}</p>
+    </td>
+    <td>
+        <a href="#" id="video_link_{{key}}">clip</a>
+        {% if cur_row.video_url  %}
+            <div id="video_container_{{key}}" style="width: 0; overflow: hidden; transition: width 0.5s;"></div>
+            <video id="video_player_{{key}}" controls style="width: 100%; display: none;">
+                <source src="{{ cur_row.video_url}}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div id="status_icon_{{key}}" class="icon">✔️</div>
+        {% else %}
+            <div id="video_container_{{key}}" style= "width: 0; overflow: hidden; transition: width 0.5s;"></div>
+            <video id="video_player_{{key}}" controls style="width: 100%; display: none;">
+                <source type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div id="status_icon_{{key}}" class="icon">❌</div>
+        {% endif %}
+    </td>
+    <td id = "audio_td">
+        <audio id = "audio_player" controls>
+            <source src="{{ cur_row.audio_url }}" type="audio/wav">
+            Your browser does not support the audio element.
+          </audio>
+    </td>
+    <td id = "speech_td">
+        <p id = "original_speech" class = 'max-length'>{{cur_row.speech}}</p>
+        <h4>_______________________________________________</h4>
+        <p id ="asrd_speech" class = 'max-length'>{{cur_row.asr_speech}}</p>
+        <h4 id ="wer_value">WER = {{cur_row.wer}}</h4>
+    </td>
+    <td id = "time_td">
+        <p id = "time_value_{{key}}"> {{cur_row.time}} </p>
+    </td>
+    <td id = "speaker_td">
+        <p id = "speaker_name"> {{cur_row.speaker}}</p>
+    </td>
+    <td id = "regenerate_td">
+        <button id="regenerate_button_{{key}}" type="submit">Regenerate</button>
+    </td>
+    <td>
+        <input type="checkbox" id="delete_button" name="delete">
+    </td>
+    <td>
+        <form id="time_form_{{ key|escapejs }}">
+            <input type="number" id="hour_{{ key|escapejs }}" name="hour" min="0" max="23" required placeholder="Hour (0-23)" value="0">
+            <input type="number" id="minute_{{ key|escapejs }}" name="minute" min="0" max="59" required placeholder="Minute (0-59)" value="0">
+            <input type="number" id="second_{{ key|escapejs }}" name="second" min="0" max="59" required placeholder="Second (0-59)" value="0">
+        </form>
+        <button id="add_button_{{key}}">Add Item</button>
+        <button id="mark_{{key}}">Mark</button>
+        <button id="fetch_{{key}}"> Fetch</button>
+        <button id="detail_view_{{key}}"> Detail View</button>
+        <ul id="item_list_{{key}}"></ul>
+        <button id="refresh_button_{{key}}">Clear Item</button>
+        <button id="create_clip_{{key}}">Create</button>
+
+    </td>
+
+</tr>
+
+
+
+<script>
+    document.getElementById("video_link_{{ key|escapejs }}").addEventListener("click", function (event){
+        event.preventDefault();
+        var video_container = document.getElementById('video_container_{{ key|escapejs }}')
+        var video_player = document.getElementById('video_player_{{ key|escapejs }}')
+
+        if (video_container.style.width == '640px')
+        {
+            video_container.style.width = '0';
+            video_player.pause();
+            video_player.style.display = 'none';
+        }
+        else
+        {
+            video_container.style.width = '640px'
+            video_player.style.display = 'block'
+            video_player.play();
+        }
+        
+    });
+
+</script>
+
+
+<script>
+    
+    document.getElementById('add_button_{{ key|escapejs }}').addEventListener('click', function (){
+        const new_item = document.createElement('li');
+        new_item.id = get_uuid();
+        const hour = document.getElementById('hour_{{ key|escapejs }}').value;
+        const minute = document.getElementById('minute_{{ key|escapejs }}').value;
+        const second = document.getElementById('second_{{ key|escapejs }}').value;
+        const item_list = document.getElementById('item_list_{{ key|escapejs }}');
+        new_item.textContent = hour + ':' + minute + ':' + second;
+        const delete_button = document.createElement('button');
+        delete_button.textContent = 'X';
+        delete_button.onclick = function() { 
+            item_list.removeChild(new_item);
+        };
+
+        new_item.appendChild(delete_button);
+            item_list.appendChild(new_item);
+        });
+</script>
+
+<script>
+    document.getElementById('refresh_button_{{ key|escapejs }}').addEventListener('click', function(){
+        const item_list = document.getElementById('item_list_{{ key|escapejs }}');
+        item_list.innerHTML = '';
+    });
+</script>
+
+<script>
+    document.getElementById("create_clip_{{ key|escapejs }}").addEventListener("click", function () {
+        
+        this.disabled = true;
+        const item_list = document.getElementById('item_list_{{ key|escapejs }}');
+        times = item_list.querySelectorAll('li');
+        new_times = []
+        total_time_from_clip = 0.0
+        total_time_of_audio = parseFloat(document.getElementById('time_value_{{ key|escapejs }}').textContent)
+        for(time of times)
+        {
+            time1 = time.textContent.split('X')[0] 
+            time2 = time1.split(':')
+            hour = parseInt(time2[0])
+            minute = parseInt(time2[1])
+            second = parseInt(time2[2])
+            timestamp = hour * 3600 + minute * 60 + second;
+            new_times.push(timestamp);
+            total_time_from_clip += 2.5;
+        }
+        console.log(total_time_from_clip);
+        console.log(total_time_of_audio);
+        if (total_time_from_clip < total_time_of_audio)
+        {
+            alert("Pleae Enter the Complete Timestamp!!");
+            this.disabled = false;
+            return;
+        }
+
+        console.log(new_times);
+        endpoint = "api/create_clip/";
+        const row =  document.getElementById("{{ key|escapejs }}")
+        const _id_ = "{{ key|escapejs }}"
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace');
+        const instance = params.get('instance_name');
+        const data = {
+            _ids_ : _id_,
+            workspace : workspace,
+            instance : instance,
+            timestamp : new_times
+        };
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({ data }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log('working')
+                console.log(data['source_url']);
+                var video_player = document.getElementById('video_player_{{key}}');
+                var source_tag = video_player.getElementsByTagName('source')[0];
+                var status_icon = document.getElementById('status_icon_{{ key|escapejs }}');
+                status_icon.textContent = '✔️';
+                source_tag.src = data['source_url'] + "?cb=" + new Date().getTime();;
+                video_player.load();
+                this.disabled = false;
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+    });
+</script>
+
+<script>
+    document.getElementById("regenerate_button_{{ key|escapejs }}").addEventListener("click", function () {
+        this.disabled = true;
+        endpoint = "api/regenerate/";
+        const row =  document.getElementById("{{ key|escapejs }}")
+        const _id_ = "{{ key|escapejs }}"
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace');
+        const instance_name = params.get('instance_name');
+        const data = {
+            _ids_ : _id_,
+            workspace : workspace,
+            instance_name : instance_name
+        };
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({ data }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                this.disabled = false;
+                row_data = data["{{ key|escapejs }}"]
+                row.querySelector('audio#audio_player').src = row_data.audio_url + "?cb=" + new Date().getTime();
+                row.querySelector('audio#audio_player').load();
+
+                row.querySelector('p#original_speech.max-length').textContent = row_data.speech
+                row.querySelector('p#asrd_speech.max-length').textContent = row_data.asr_speech
+                row.querySelector('h4#wer_value').textContent =`WER = ${row_data.wer}`
+                row.querySelector('p#time_value').textContent = row_data.time
+                row.style.backgroundColor = "#FFD700";
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+    });
+</script>
+
+<script>
+    
+    document.getElementById("fetch_{{ key|escapejs }}").addEventListener("click", function () {
+        this.disabled = true;
+        endpoint = "api/fetch/";
+        const row =  document.getElementById("{{ key|escapejs }}")
+        const _id_ = "{{ key|escapejs }}"
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace');
+        const instance_name = params.get('instance_name');
+        const data = {
+            _ids_ : _id_,
+            workspace : workspace,
+            instance_name : instance_name
+        };
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({ data }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                this.disabled = false;
+                const item_list = document.getElementById('item_list_{{ key|escapejs }}');
+                item_list.innerHTML = '';
+                timestamp = data.timestamp
+                console.log(timestamp)
+                for(var time of timestamp)
+                    {
+                        var hour = Math.floor(time / 3600);
+                        var minute = Math.floor(time / 60) - hour * 60;
+                        var second = time - minute * 60 - hour * 3600;
+                        const new_item = document.createElement('li');
+                        new_item.id = get_uuid();
+                        new_item.textContent = hour + ':' + minute + ':' + second;
+                        const delete_button = document.createElement('button');
+                        delete_button.textContent = 'X';
+                        delete_button.id = get_uuid();
+                        delete_button.onclick = function() { 
+                        item_list.removeChild(new_item);
+                        };
+
+                        new_item.appendChild(delete_button);
+                    item_list.appendChild(new_item);
+                    }
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+    });
+</script>
+
+<script>
+    document.getElementById('mark_{{ key|escapejs }}').addEventListener('click', function(){
+        key = '{{ key|escapejs }}'
+        document.getElementById('video-title').textContent = key
+    });
+</script>
+
+<script>
+
+    document.getElementById('detail_view_{{ key|escapejs }}').addEventListener('click', function(){
+        endpoint = "api/fetch_image/";
+        const row =  document.getElementById("{{ key|escapejs }}")
+        const _id_ = "{{ key|escapejs }}"
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace');
+        const instance_name = params.get('instance_name');
+        const data = {
+            _ids_ : _id_,
+            workspace : workspace,
+            instance_name : instance_name
+        };
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({ data }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                image_path = data.image_path;
+                timestamp = data.timestamp;
+                console.log(image_path);
+                let popup = window.open("", "ImagePopup", "width=600 , height=400");
+        let image_html = ""
+        for(var itr =0; itr < image_path.length; itr++)
+        {
+            time_itr = timestamp[itr]
+            var hour = Math.floor(time_itr/3600);
+            var minute  = Math.floor(time_itr/60) - hour * 60;
+            var second = time_itr - minute * 60 - hour * 3600;
+            var text = hour + ':' + minute + ':' + second;
+            check_box_html = `<p>${text}</p>`
+            html_for_this_entry = `<img src="${image_path[itr]}" alt="Popup Image" width="500" height="500" style="object-fit: contain;">\n`
+            image_html += check_box_html;
+            image_html += html_for_this_entry 
+        }
+        html_code = `
+        <html>
+        <head><title>Image Popup</title></head>
+        <body>
+            <h2>Here are the images</h2>
+            ${image_html}
+            <br>
+            <button onclick="window.close()">Close</button>
+        </body>
+        </html>
+    `
+        popup.document.write(html_code);
+    
+        popup.document.close();
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+    });
+    </script>
+    

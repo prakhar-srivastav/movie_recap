@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+
+<h1>SPEECH MAKER</h1>
+
+<button id="play_bulk" type="submit">Play BULK</button>
+<br>
+
+{% if instance_name == "" %}
+<textarea id="instance_text_area" name="message" rows="1" cols="30"> </textarea>
+<button id="save_instance" type="submit">Save Instance</button>
+{% else %}
+<h2> {{instance_name}} </h2>
+{% endif %}
+
+<style>
+    #video_main_play {
+        display: block !important; /* Ensures the video is always in block display mode */
+        opacity: 1 !important; /* Ensures the video is fully opaque */
+        z-index: 1000 !important; /* Brings the video to the top layer */
+        width: 640px !important; /* Specify width, override existing */
+        height: 360px !important; /* Specify height, override existing */
+        margin: auto; /* Center the video if within a container */
+        float: right;
+            }
+    .sticky-video {
+        position: sticky;
+        top: 20px; /* Distance from the top of the viewport */
+        right: 20px; /* Distance from the right of the viewport */
+        width: 640px; /* Width of the video */
+        height: 360px; /* Height of the video */
+        z-index: 1000; /* Ensure it's above other content */
+        background-color: #d0ff00; /* Optional: for better visibility */
+        float: right;
+            }
+</style>
+
+<div class="sticky-video">
+
+    <div id="video-title"> Nothing Marked</div>
+    <video id = 'video_main_play' data-testid="stVideo" controls="" src="http://localhost:8501/media/a7aa1c6342b81a9920dff30ff2eaf00b4b24330652a85ea17afb6233.mp4" class="stVideo" style="width: 704px;"></video>
+
+    <script>
+        function get_current_time()
+        {
+            var video = document.querySelector('video.stVideo');
+            return parseInt(video.currentTime)
+            // parseInt(document.querySelector('video.stVideo').currentTime)
+        }
+    </script>
+    
+
+</div>
+
+<script>
+    function get_uuid()
+    {
+        const randomID = `button-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+        return randomID;
+    };
+</script>
+
+<table id = 'audit_view' border="1">
+    <tr  style="background-color: lightblue;">
+        <th>RANK/CHAPTER</th>
+        <th>CLIP</th>
+        <th>AUDIO</th>
+        <th>SPEECH/ASR</th>
+        <th>TIME</th>
+        <th>SPEAKER</th>
+        <th>REGENERATE</th>
+        <th>DELETE</th>
+        <th>VIDEO OPTIONS</th>
+      </tr>
+    
+    {% for key, cur_row in content_context.items %}
+        {% with key as key  %}
+            {% with cur_row as cur_row  %}
+                  {% include  "speech_maker/prod_row.html" %}
+            {% endwith %}
+        {% endwith %}
+    {% endfor %}
+</table>
+
+<button id="delete_selection" type="submit">Delete Selections</button>
+<button id="create_full_video" type="submit">Compose</button>
+
+<form id="character_form">
+    <input type="text" id="character_cr_enter" name="character_name" required placeholder="Enter character name">
+    <input type="text" id="position_cr_enter" name="position" required placeholder="Enter l/r">    
+    <input type="number" id="hour_cr_enter" name="hour" min="0" max="23" required placeholder="Hour (0-23)" value="0">
+    <input type="number" id="minute_cr_enter" name="minute" min="0" max="59" required placeholder="Minute (0-59)" value="0">
+    <input type="number" id="second_cr_enter" name="second" min="0" max="59" required placeholder="Second (0-59)" value="0">
+</form>
+<button id="add_button_cr_enter">Add Item</button>
+<button id="create_clip_cr_enter">Create clip with character</button>
+<ul id="item_list_cr_enter"></ul>
+
+<a href="#" id="result_clip"> Final Clip</a>
+        {% if result_video_url  %}
+            <div id="result_clip_cont" style="width: 0; overflow: hidden; transition: width 0.5s;"></div>
+            <video id="result_clip_player" controls preload="auto" style="width: 1280px; height: 720px; display: none;">
+                <source src="{{ result_video_url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div id="result_clip_indicator" class="icon">✔️</div>
+        {% else %}
+            <div id="result_clip_cont" style= "width: 0; overflow: hidden; transition: width 0.5s;"></div>
+            <video id="result_clip_player" controls preload="auto" style="width: 1280px; height: 720px; display: none;">
+                <source type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div id="result_clip_indicator" class="icon">❌</div>
+        {% endif %}
+
+<script>
+    document.getElementById("result_clip").addEventListener("click", function (event){
+        event.preventDefault();
+        var video_container = document.getElementById('result_clip_cont');
+        var video_player = document.getElementById('result_clip_player');
+
+        if (video_container.style.width == '640px')
+        {
+            video_container.style.width = '0';
+            video_player.pause();
+            video_player.style.display = 'none';
+        }
+        else
+        {
+            video_container.style.width = '640px'
+            video_player.style.display = 'block'
+            video_player.play();
+        }
+    });
+
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+
+    function get_now_timestamp() {
+        var now = new Date();
+        return now.getTime();
+    }
+
+    function handle_press_event(event) {
+            if (event.keyCode === 17) {
+                console.log("Spacebar pressed!");
+                table = document.getElementById('audit_view')
+                rows = table.getElementsByTagName("tr");
+                for (var i =1; i < rows.length; i++)
+                {
+                    row = rows[i];
+                    if(row.querySelector("audio#audio_player").paused)
+                        continue;
+                    else
+                        row.style.backgroundColor = "grey";
+                }
+            }
+        }
+
+    function play_audio(audio_element)
+    {
+        return new Promise((resolve, reject) => {
+            audio_element.play().then(() => {
+                audio_element.addEventListener("ended", resolve);
+            }).catch(reject);
+        });
+    };
+
+    async function play_audio_sequentially(audio_elements)
+    {
+        for (const audio_element of audio_elements)
+        {
+            await play_audio(audio_element);
+        };
+    };
+
+    document.getElementById("play_bulk").addEventListener("click", function () {
+        this.disabled = true;
+        var table = document.getElementById("audit_view")
+        var rows = document.getElementsByTagName("tr")
+
+        audio_players = []
+
+        for(var i =1; i< rows.length; i++)
+        {
+            rows[i].style.backgroundColor = "white";
+            audio_players.push(rows[i].querySelector("audio#audio_player"))
+        }
+        document.addEventListener("keydown", handle_press_event);
+        play_audio_sequentially(audio_players).then(() =>{
+            document.removeEventListener("keydown", handle_press_event);
+            this.disabled = false;
+            console.log('All audio files have finished playing.');
+        }).catch((error) => {
+            console.error('An error occurred during audio playback', error);
+        });
+
+    });
+</script>
+
+
+<script>
+        save_instance = document.getElementById("save_instance");
+        if (save_instance)
+        {
+            save_instance.addEventListener("click", function () {
+            endpoint = "api/save_instance/";
+            const filename = document.getElementById("instance_text_area").value;
+            const data = {
+                filename: filename,
+            };
+            fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+
+                body: JSON.stringify({ data }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.logs("Save success!");
+                })
+                .catch((error) => {
+                    console.log("Error:", error);
+                });
+         });    
+        }  
+</script>
+
+<script>
+document.getElementById("delete_selection").addEventListener("click", function () {
+        this.disabled = true;
+        var table = document.getElementById("audit_view")
+        var rows = document.getElementsByTagName("tr")
+
+        to_delete = [];
+
+        for(var i =1; i< rows.length; i++)
+        {
+            rows[i]
+            delete_box = rows[i].querySelector("input#delete_button")
+            if (delete_box.checked)
+            {
+                to_delete.push(rows[i].id);
+            }
+        }
+        endpoint = "api/delete_selection/";
+        const data = {
+            '_ids_': to_delete,
+        };
+
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                    },
+            body: JSON.stringify({ data }),
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                location.reload(true)
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+        });    
+
+
+</script>
+
+<script>
+
+document.getElementById("create_full_video").addEventListener("click", function () {
+        this.disabled = true;
+        var table = document.getElementById("audit_view")
+        var rows = document.getElementsByTagName("tr")
+
+        var count = 0
+        
+        for(var i =1; i< rows.length; i++)
+        {
+            source_sel = rows[i].querySelector("source")
+            if (source_sel.src == null)
+            {
+                count +=1;
+            }
+        }
+        if (count > 0)
+        {
+            alert('Not all clips are present!!');
+            this.disabled = false;
+            return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace');
+        const instance = params.get('instance_name');
+        const data = {
+            workspace : workspace,
+            instance : instance,
+        };
+
+        endpoint = "api/create_clip/";
+
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                    },
+            body: JSON.stringify({ data }),
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                alert('Success!!');
+
+                this.disabled = false;
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+        });
+</script>
+
+<script>
+    
+    document.getElementById('add_button_cr_enter').addEventListener('click', function (){
+        const new_item = document.createElement('li');
+        new_item.id = get_uuid();
+        const hour = document.getElementById('hour_cr_enter').value;
+        const minute = document.getElementById('minute_cr_enter').value;
+        const second = document.getElementById('second_cr_enter').value;
+        const character = document.getElementById('character_cr_enter').value;
+        const position = document.getElementById('position_cr_enter').value;
+        const item_list = document.getElementById('item_list_cr_enter');
+        new_item.textContent = hour + ':' + minute + ':' + second + '_' + character + '_' + position;
+        const delete_button = document.createElement('button');
+        delete_button.textContent = 'X';
+        delete_button.onclick = function() { 
+            item_list.removeChild(new_item);
+        };
+
+        new_item.appendChild(delete_button);
+            item_list.appendChild(new_item);
+        });
+</script>
+
+<script>
+    document.getElementById("create_clip_cr_enter").addEventListener("click", function () {
+        
+        const item_list = document.getElementById('item_list_cr_enter');
+        infos = item_list.querySelectorAll('li');
+        console.log(infos)
+        character_information = []
+        for(info of infos)
+        {
+            info1 = info.textContent.split('X')[0] 
+            info2 = info1.split('_')
+            time1 = info2[0], character = info2[1], pos = info2[2]; 
+            time2 = time1.split(':')
+            hour = parseInt(time2[0])
+            minute = parseInt(time2[1])
+            second = parseInt(time2[2])
+            timestamp = hour * 3600 + minute * 60 + second;
+            character_information.push([timestamp, character, pos]);
+        }
+        console.log(character_information);
+        endpoint = "api/add_text_to_clip/";
+
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace');
+        const instance = params.get('instance_name');
+        const data = {
+            workspace : workspace,
+            instance : instance,
+            character_information : character_information
+        };
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({ data }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                alert("Success")
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+    });
+</script>
+
+
+<script>
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'x' || event.key === 'X') {
+            const key = 'item_list_' + document.getElementById('video-title').textContent
+            var current_time = parseInt(document.getElementById('video_main_play').currentTime)
+    
+            console.log(current_time)
+
+            const new_item = document.createElement('li');
+            new_item.id = get_uuid();
+            const hour = parseInt(current_time/3600);
+            const minute = parseInt(current_time/60) - hour * 60;
+            const second = current_time - minute * 60 - hour * 3600;
+            const item_list = document.getElementById(key);
+            new_item.textContent = hour + ':' + minute + ':' + second;
+            const delete_button = document.createElement('button');
+            delete_button.textContent = 'X';
+            delete_button.onclick = function() { 
+                item_list.removeChild(new_item);
+            };
+
+            new_item.appendChild(delete_button);
+            item_list.appendChild(new_item);
+        }
+
+        if (event.key === 'v' || event.key === 'V') {
+            const key = document.getElementById('video-title').textContent;
+            rows = document.getElementsByTagName('tr');
+            for(var i =1;i<rows.length; i++)
+            {
+                row = rows[i];
+                if(row.id == key && i+1 < rows.length)
+                {
+                    document.getElementById('video-title').textContent = rows[i+1].id;
+                    return;
+                }
+            }
+        }
+
+        if (event.key === 'k' || event.key === 'K') {
+            var current_time = parseInt(document.getElementById('result_clip_player').currentTime)
+            rows = document.getElementsByTagName('tr');
+            var ul = 0;
+            for(var i =1;i<rows.length; i++)
+            {
+                audio_player = rows[i].querySelector("audio#audio_player")
+                if ( ul + audio_player.duration >= current_time)
+                {
+                    rows[i].style.backgroundColor = "yellow";
+                    break;
+                }
+                else
+                {
+                    ul += audio_player.duration;
+                }
+            }
+        }
+});
+
+</script>
+
+{% endblock %}

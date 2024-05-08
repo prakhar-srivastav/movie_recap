@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<body>
+
+<h1>Choose Workspace</h1>
+<select name="workspace" id="workspace">
+    {% for item in workspace_list %}
+    <option value="{{item}}">{{item}}</option>
+    {% endfor %}
+</select>
+<br>
+<button id="select_workspace" type="submit">Select Workspace</button>
+
+</body>
+
+<script>
+
+    function load_html_content_into_container(container, html)
+    {
+        const parser = new DOMParser();
+        console.log(parser)
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        Array.from(doc.body.childNodes).forEach(node=>{
+            if (node.nodeName.toLowerCase() != 'script')
+            {
+                container.appendChild(node.cloneNode(true))
+            }
+        });
+
+        Array.from(doc.getElementsByTagName('script')).forEach(script=>{
+            const new_script = document.createElement('script');
+            if(script.src)
+            {
+                new_script.src = script.src;
+            }
+            else
+            {
+                new_script.textContent = script.textContent;
+            }
+            document.body.appendChild(new_script);
+        });
+    }
+</script>
+
+
+<script>
+
+    function add_params_to_uri(uri, param_list)
+        {
+            if (param_list.length == 0 )
+                return uri;
+            console.log(params)
+            console.log(uri)
+            uri = uri + '?' + param_list[0][0] + '=' + encodeURIComponent(param_list[0][1]);
+            
+            for(var i =1; i < param_list.length ; i++)
+            {
+                uri = uri + '&' + param_list[i][0] + '=' + encodeURIComponent(param_list[i][1]);
+            }
+            return uri;
+        };
+
+        document.getElementById("select_workspace").addEventListener("click", function () {
+            
+            // option 1
+            const workspace = document.getElementById('workspace').value 
+
+            uri = 'control_panel/'
+            params = [
+                        ['workspace',workspace]
+                    ];
+            uri = add_params_to_uri(uri, params);
+            console.log(uri);
+            window.location.href = uri
+        });
+
+
+</script>
+
+
+{% endblock %}
+

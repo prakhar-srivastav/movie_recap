@@ -1,0 +1,46 @@
+
+
+<tr id = "{{key}}">
+    <td id = "name_td">
+        <p id = "name_audio">{{ cur_row.name }}</p>
+    </td>
+    <td id = "time_td">
+        <p id = "time_audio">{{ cur_row.time }}</p>
+    </td>
+    <td id = "speech_maker_td" style="text-align: center;">
+        <button id="preview_{{key}}" type="submit" >Preview</button>
+    </td>
+</tr>
+
+<script>
+
+function add_params_to_uri(uri, param_list)
+        {
+            if (param_list.length == 0 )
+                return uri;
+            console.log(params)
+            console.log(uri)
+            uri = uri + '?' + param_list[0][0] + '=' + encodeURIComponent(param_list[0][1]);
+            
+            for(var i =1; i < param_list.length ; i++)
+            {
+                uri = uri + '&' + param_list[i][0] + '=' + encodeURIComponent(param_list[i][1]);
+            }
+            return uri;
+        };
+
+
+
+    document.getElementById("preview_{{ key|escapejs }}").addEventListener("click", function () {
+        uri = "/speech_maker/";
+        params = [
+            ['workspace', "{{ workspace|escapejs }}"],
+            ['instance_name', "{{ key|escapejs }}"],
+                ]
+        uri = add_params_to_uri(uri, params);
+        console.log(uri);
+        window.location.href = uri
+    });
+    
+
+</script>

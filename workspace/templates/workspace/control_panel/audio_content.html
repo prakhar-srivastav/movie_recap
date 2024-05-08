@@ -1,0 +1,70 @@
+<h3>Audio Workspace</h3>
+<br />
+<table id = 'audit_view' border="1">
+    <tr  style="background-color: lightblue;">
+        <th>NAME</th>
+        <th>TIME</th>
+        <th>SPEECH MAKER</th>
+      </tr>
+    
+    {% for key, cur_row in audio_context.items %}
+        {% with key as key  %}
+            {% with cur_row as cur_row  %}
+                  {% include  "workspace/control_panel/audio_row.html" %}
+            {% endwith %}
+        {% endwith %}
+    {% endfor %}
+
+</table>
+<br />
+<button id="generate_new_audio" type="submit">Generate Audio</button>
+
+<br />
+<textarea id="text_area_for_audio_files"> </textarea>
+<button id="combine_audio" type="submit">Combine Audio</button>
+
+
+
+<script>
+    document.getElementById("combine_audio").addEventListener("click", function () {
+        endpoint = "/speech_maker/api/combine_audio_instance/";
+        text_area_for_audio_files = document.getElementById("text_area_for_audio_files").value;
+        audio_list = text_area_for_audio_files.split('\n')
+        new_audio_list = [];
+        for(const cur of audio_list)
+        {
+            const trimmed = cur.trim()
+            if (trimmed != "")
+            {
+                new_audio_list.push(trimmed);
+            }
+        }
+        audio_list = new_audio_list;
+        workspace = "{{ workspace|escapejs }}";
+        data = {
+                audio_list : audio_list,
+                workspace : workspace
+            }
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ data }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("Success:", data);
+            })
+            .catch((error) => {
+                console.log("Error:", error);
+            });
+});
+</script>
+
+<script>
+    document.getElementById("generate_new_audio").addEventListener("click", function () {
+        uri = "/audio_audit/";
+        window.location.href = uri
+    });
+</script>
