@@ -444,6 +444,10 @@ class WolfyTTSMiddleware(object):
         return context
 
 
+    def get_instance(self):
+        return self._id_
+
+
     def get_movie_url(self):
         folder_path = self.get_folder_path()
         parent_folder = os.path.dirname(os.path.dirname(folder_path))
@@ -455,6 +459,13 @@ class WolfyTTSMiddleware(object):
         folder_path = self.get_folder_path()
         parent_folder = os.path.dirname(os.path.dirname(folder_path))
         movie_url = os.path.join(parent_folder, 'movie/result.mp4')
+        return movie_url
+
+
+    def get_result_yt_video_url(self):
+        folder_path = self.get_folder_path()
+        parent_folder = os.path.dirname(os.path.dirname(folder_path))
+        movie_url = os.path.join(parent_folder, 'movie/result_yt.mp4')
         return movie_url
 
 
@@ -852,7 +863,7 @@ class RecapGPTMiddleware(WolfyTTSMiddleware):
 
         duration = int(VideoFileClip(video_path).duration)
         print(duration)
-        num_workers = 12
+        num_workers = 8
         inps = [i for i in range(0, duration, 1)]
         inps = self.divide_chunks(inps, num_workers)
         inps = [(video_path, x, image_folder) for x in inps]
@@ -1141,6 +1152,38 @@ class RecapGPTMiddleware(WolfyTTSMiddleware):
         for time in range(start,start+duration,1):
             ts.append(timestamp[time])
         return ts
+
+
+    def save_text(self, _ids_, text):
+        if type(_ids_) != list:
+            _ids_ = [_ids_]
+        
+        _folder_path_ = self.get_folder_path()
+
+        _new_ids_ = []
+        for _id_ in _ids_:
+            _new_ids_.append(_id_.split('_')[-1])
+        _ids_ = _new_ids_
+        for _id_ in _ids_:
+            
+            audio_folder = os.path.join(_folder_path_, _id_)
+            audio_data_path = os.path.join(audio_folder, 'data.json')
+            audio_file = os.path.join(audio_folder, 'speech.wav')
+            data = self.read_json(audio_data_path)
+            data['speech'] = text
+            self.save_audio_instance(text = data.get('speech'),
+                            file_path = audio_file,
+                            speaker_wav = data.get('speaker'),
+                            silence = data.get('silence'),
+                            rank = data.get('rank'),
+                            chapter = data.get('chapter'),
+                            start = data.get('start'),
+                            duration = data.get('duration'),
+                            movie_timestamps = data.get('movie_timestamps',None),
+                            original_movie_timestamps = data.get('orginal_movie_timestamps',None),
+                            original_speech = data.get('original_speech', None)
+                            )
+        return self.get_context(set(_ids_))
 
 
     def save_with_silence(self, text="", file_path = "", speaker_wav = "", silence = 250, duration = None):

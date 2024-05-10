@@ -59,10 +59,11 @@
           </audio>
     </td>
     <td id = "speech_td">
-        <p id = "original_speech" class = 'max-length'>{{cur_row.speech}}</p>
+        <p contenteditable="true" id = "original_speech_{{key}}" class = 'max-length'>{{cur_row.speech}}</p>
         <h4>_______________________________________________</h4>
-        <p id ="asrd_speech" class = 'max-length'>{{cur_row.asr_speech}}</p>
-        <h4 id ="wer_value">WER = {{cur_row.wer}}</h4>
+        <p id ="asrd_speech_{{key}}" class = 'max-length'>{{cur_row.asr_speech}}</p>
+        <h4 id ="wer_value_{{key}}">WER = {{cur_row.wer}}</h4>
+        <button id = 'save_text_{{key}}'>Save</button>
     </td>
     <td id = "time_td">
         <p id = "time_value_{{key}}"> {{cur_row.time}} </p>
@@ -94,7 +95,40 @@
 
 </tr>
 
+<script>
+     document.getElementById("save_text_{{ key|escapejs }}").addEventListener("click", function (event){
+        this.disabled = true;    
+        var text = document.getElementById('original_speech_{{ key|escapejs }}').textContent;
+            endpoint = "api/save_text/";
+            const row =  document.getElementById("{{ key|escapejs }}")
+            const _id_ = "{{ key|escapejs }}"
+            const params = new URLSearchParams(window.location.search);
+            const workspace = params.get('workspace');
+            const instance_name = params.get('instance_name');
+            const data = {
+                _ids_ : _id_,
+                workspace : workspace,
+                instance_name : instance_name,
+                text : text
+            };
+            fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
 
+                body: JSON.stringify({ data }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    this.disabled = false;
+                    console.log('Done')
+                })
+                .catch((error) => {
+                    console.log("Error:", error);
+                });
+            });
+</script>
 
 <script>
     document.getElementById("video_link_{{ key|escapejs }}").addEventListener("click", function (event){

@@ -44,6 +44,7 @@ def speech_maker(request):
     theme_factory = ThemeFactory()
 
     global wolfy_tts_middleware
+    from workspace.video_maker.preset_for_movie import create_yt_clip, create_clip
 
     if instance_name == "":
         text = transcript
@@ -56,11 +57,28 @@ def speech_maker(request):
     movie_url = wolfy_tts_middleware.get_movie_url()
     movie_url = filesystem_to_media_url(movie_url)
     print("MOVIE_URL", movie_url)
-
+    data = {
+        'workspace' : workspace,
+        'instance' : wolfy_tts_middleware.get_instance()
+    }
     result_video_url = wolfy_tts_middleware.get_result_video_url()
-    result_video_url = filesystem_to_media_url(result_video_url)
+    if os.path.exists(result_video_url):
+        result_video_url = filesystem_to_media_url(result_video_url)
+    else:
+        create_clip(data)
+        result_video_url = filesystem_to_media_url(result_video_url)
     print("RESULT_VIDEO_URL", result_video_url)
 
+    result_yt_video_url = wolfy_tts_middleware.get_result_yt_video_url()
+    if os.path.exists(result_yt_video_url):
+        result_yt_video_url = filesystem_to_media_url(result_yt_video_url)
+    else:
+        create_yt_clip(data)
+        result_yt_video_url = filesystem_to_media_url(result_yt_video_url)
+    print("RESULT_YT_VIDEO_URL", result_yt_video_url)
+
+
+    
     return render(request,
                 'speech_maker/main.html',
                 context = {
@@ -68,7 +86,8 @@ def speech_maker(request):
                     'content_context' : content_context,
                     'instance_name' : instance_name,
                     'movie_url' : movie_url,
-                    'result_video_url' : result_video_url
+                    'result_video_url' : result_video_url,
+                    'result_yt_video_url' : result_yt_video_url
                 })    
     
 @csrf_exempt
@@ -77,6 +96,21 @@ def save_instance(request):
     filename = data['filename']
     wolfy_tts_middleware.save_file(filename)
     return HttpResponse('true')
+
+
+@csrf_exempt
+def save_text(request):
+    data = json.loads(request.body.decode('utf-8'))['data']    
+    _ids_ = data['_ids_']
+    workspace = data['workspace']
+    instance_name = data['instance_name']
+    text = data['text']
+    theme_factory = ThemeFactory()
+    wolfy_tts_middleware = theme_factory.get_middleware(workspace, _id_ = instance_name)
+    wolfy_tts_middleware.save_text(_ids_, text)
+    context = wolfy_tts_middleware.regenerate_by_ids(_ids_)
+    return JsonResponse(context)
+
 
 
 @csrf_exempt
@@ -145,6 +179,16 @@ def create_clip(request):
     data = json.loads(request.body.decode('utf-8'))['data']
     from workspace.video_maker.preset_for_movie import create_clip
     source_url = create_clip(data)
+    result = {}
+    result['source_url'] = filesystem_to_media_url(source_url)
+    return JsonResponse(result)
+
+
+@csrf_exempt
+def create_yt_clip(request):
+    data = json.loads(request.body.decode('utf-8'))['data']
+    from workspace.video_maker.preset_for_movie import create_yt_clip
+    source_url = create_yt_clip(data)
     result = {}
     result['source_url'] = filesystem_to_media_url(source_url)
     return JsonResponse(result)

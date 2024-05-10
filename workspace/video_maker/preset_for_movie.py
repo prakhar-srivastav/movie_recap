@@ -38,6 +38,7 @@ from audio_generator import ThemeFactory
 from moviepy.editor import TextClip, AudioClip, VideoClip, AudioFileClip, VideoFileClip, CompositeAudioClip, ImageSequenceClip, ImageClip, CompositeVideoClip
 from moviepy.editor import concatenate_audioclips, concatenate_videoclips
 import moviepy.video.fx.all as vfx
+import moviepy.audio.fx.all as afx
 import random
 
 
@@ -97,7 +98,7 @@ def add_text_to_clip(argument_map):
     instance = argument_map['instance']
     character_information = argument_map['character_information']
     clips = []
-    workspace_folder = '/home/prakharrrr4/wolfy_ui/wolf/media/workspace/'
+    workspace_folder = '/home/prakharrrr4/movie_recap/media/workspace/'
     movie_path = os.path.join(workspace_folder, 
                     os.path.join(workspace,'movie/result.mp4'))
     ret_path = os.path.join(workspace_folder, 
@@ -133,6 +134,52 @@ def add_text_to_clip(argument_map):
     return ret_path
 
 
+def create_yt_clip(argument_map):
+
+    print("Creating YT Clip")
+    workspace = argument_map.get('workspace',None)
+    speech = argument_map.get('instance',None)
+    workspace_folder = '/home/prakharrrr4/movie_recap/media/workspace/'
+    yt_video_path = os.path.join(workspace_folder, 
+                    os.path.join(workspace,'movie/yt_video.mp4'))
+    video_clip = VideoFileClip(yt_video_path)
+
+    driver = ThemeFactory().get_middleware(workspace,
+                        theme = 'gpt_movie',
+                        _id_ = speech)
+
+    contexts = driver.get_internal_context()
+
+    video_clips = []
+    lim = 1
+    result_file = None
+    for (chapter, rank, hash), snap in contexts.items():
+        
+        print("Chapter : {}, Rank : {}".format(chapter, rank))
+        key = str(chapter) + '_' + str(rank) + '_' + hash
+        
+        data_file = snap['data']
+        data = utility.read_json(data_file)
+        audio_file = snap['audio']
+        audio_clip = AudioFileClip(audio_file)
+        target_duration = audio_clip.duration
+        duration = data['duration']
+        start = data['start']
+        timestamp = []
+        start = int(start)
+        duration = int(duration)
+
+        final_clip = video_clip.subclip(start,start+duration)
+        final_clip = vfx.multiply_speed(final_clip, final_duration = target_duration)
+        final_clip.audio = None
+        video_clips.append(final_clip)
+        
+
+    clip = concatenate_videoclips(video_clips)
+    result_file = os.path.join(workspace_folder, 
+                    os.path.join(workspace,'movie/result_yt.mp4'))
+    clip.write_videofile(result_file)
+    return result_file
 
 
 def create_clip(argument_map):
@@ -142,7 +189,7 @@ def create_clip(argument_map):
     speech = argument_map.get('instance',None)
     _id_ = argument_map.get('_ids_',None)
     timestamp = argument_map.get('timestamp',None)
-    workspace_folder = '/home/prakharrrr4/wolfy_ui/wolf/media/workspace/'
+    workspace_folder = '/home/prakharrrr4/movie_recap/media/workspace/'
     movie_path = os.path.join(workspace_folder, 
                     os.path.join(workspace,'movie/movie.mp4'))
     video_clip = VideoFileClip(movie_path)
@@ -218,18 +265,20 @@ def create_clip(argument_map):
         video_clips.append(final_clip)
         result_file = snap['data'].replace('data.json','clip.mp4')
         
-
     clip = concatenate_videoclips(video_clips)
     c_credit = utility.get_hash() + '.json'
     c_audio_bg = utility.get_hash() + '.mp3'
-    utility.add_background_music(clip.audio, c_audio_bg, defaults.quotes_specific, factor = 0.4,credit_file = c_credit)
-    audio_clip = AudioFileClip(c_audio_bg)
+    # utility.add_background_music(clip.audio, c_audio_bg, defaults.quotes_specific, factor = 0.4,credit_file = c_credit)
+    # audio_clip = AudioFileClip(c_audio_bg)
+    audio_clip = clip.audio
+    audio_clip = audio_clip.fx(afx.multiply_volume, factor = 4.0)
     clip.audio = audio_clip
     if timestamp is None:
         result_file = os.path.join(workspace_folder, 
                     os.path.join(workspace,'movie/result.mp4'))
     clip.fps = 18
-    clip.write_videofile(result_file)
+    clip.write_videofile(result_file, codec='h264_nvenc', preset='fast')
+
     return result_file
 
 

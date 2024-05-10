@@ -37,7 +37,7 @@
             }
 </style>
 
-<div class="sticky-video">
+<!-- <div class="sticky-video">
 
     <div id="video-title"> Nothing Marked</div>
     <video id = 'video_main_play' data-testid="stVideo" controls="" src="http://localhost:8501/media/a7aa1c6342b81a9920dff30ff2eaf00b4b24330652a85ea17afb6233.mp4" class="stVideo" style="width: 704px;"></video>
@@ -52,7 +52,7 @@
     </script>
     
 
-</div>
+</div> -->
 
 <script>
     function get_uuid()
@@ -86,6 +86,8 @@
 
 <button id="delete_selection" type="submit">Delete Selections</button>
 <button id="create_full_video" type="submit">Compose</button>
+<button id="create_yt_video" type="submit">Compose Youtube</button>
+
 
 <form id="character_form">
     <input type="text" id="character_cr_enter" name="character_name" required placeholder="Enter character name">
@@ -99,43 +101,71 @@
 <ul id="item_list_cr_enter"></ul>
 
 <a href="#" id="result_clip"> Final Clip</a>
-        {% if result_video_url  %}
-            <div id="result_clip_cont" style="width: 0; overflow: hidden; transition: width 0.5s;"></div>
+        {% if result_video_url and result_yt_video_url  %}
+            <div id="result_clip_cont" style="width: 0; overflow: hidden; transition: width 0.5s;">
+            <video id="result_clip_player" src="{{ result_video_url }}" controls style="width: 45%; margin: 5px; float: left;"></video>
+            <video id="result_clip_yt_player" src="{{ result_yt_video_url }}" controls style="width: 45%; margin: 5px; float: right;"></video>
+            </div>
+            <div id="result_clip_indicator" class="icon">✔️</div>
+        {% elif result_video_url %}
+            <div id="result_clip_cont" style="width: 0; overflow: hidden; transition: width 0.5s;">
             <video id="result_clip_player" controls preload="auto" style="width: 1280px; height: 720px; display: none;">
                 <source src="{{ result_video_url }}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
-            <div id="result_clip_indicator" class="icon">✔️</div>
+        </div>
+            <div id="result_clip_indicator" class="icon">L</div>
         {% else %}
-            <div id="result_clip_cont" style= "width: 0; overflow: hidden; transition: width 0.5s;"></div>
+            <div id="result_clip_cont" style= "width: 0; overflow: hidden; transition: width 0.5s;">
             <video id="result_clip_player" controls preload="auto" style="width: 1280px; height: 720px; display: none;">
                 <source type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+        </div>
             <div id="result_clip_indicator" class="icon">❌</div>
         {% endif %}
 
 <script>
-    document.getElementById("result_clip").addEventListener("click", function (event){
-        event.preventDefault();
-        var video_container = document.getElementById('result_clip_cont');
-        var video_player = document.getElementById('result_clip_player');
-
-        if (video_container.style.width == '640px')
-        {
-            video_container.style.width = '0';
-            video_player.pause();
-            video_player.style.display = 'none';
-        }
-        else
-        {
-            video_container.style.width = '640px'
-            video_player.style.display = 'block'
-            video_player.play();
-        }
+var video_container = document.getElementById('result_clip_cont');
+document.getElementById("result_clip").addEventListener("click", function () {
+    if (video_container.style.width != '0px') {
+    // If the width is not 0, set it to 0 and hide videos
+    video_container.style.width = '0';
+    var video_players = video_container.getElementsByTagName('video');
+    
+    // Iterate through all video elements to apply styles and play them
+    Array.from(video_players).forEach(function(v) {
+        v.style.display = 'none';  // Set display to none to hide the video
+        v.pause();                // Pause the video instead of playing it
     });
+    
+} else {
+    // If the width is 0, expand the container and show videos
+    video_container.style.width = '100%'; // Adjust as needed for your layout
+    var video_players = video_container.getElementsByTagName('video');
+    document.addEventListener('keydown', function(event) {
+    if (event.key === 'y' || event.key === 'Y') { // 'Y' key
+    console.log(video_players);
+        Array.from(video_players).forEach(function(video) {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        });
+    }
+    });
+    // Iterate through all video elements to show them and ready them for playing
+    Array.from(video_players).forEach(function(v) {
+        v.style.display = 'block'; // Set display to block to show the video
+        // v.play();                // Uncomment this line if you want to play videos automatically
+    });
+}
+});
+// Check the width of the video container
 
 </script>
+
 
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
@@ -274,6 +304,38 @@ document.getElementById("delete_selection").addEventListener("click", function (
 
 
 </script>
+
+<script>
+
+    document.getElementById("create_yt_video").addEventListener("click", function () {
+            const params = new URLSearchParams(window.location.search);
+            const workspace = params.get('workspace');
+            const instance = params.get('instance_name');
+            const data = {
+                workspace : workspace,
+                instance : instance,
+            };
+    
+            endpoint = "api/create_yt_clip/";
+    
+            fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                        },
+                body: JSON.stringify({ data }),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    alert('Success!!');
+    
+                    this.disabled = false;
+                })
+                .catch((error) => {
+                    console.log("Error:", error);
+                });
+            });
+    </script>
 
 <script>
 
@@ -441,6 +503,7 @@ document.getElementById("create_full_video").addEventListener("click", function 
 
         if (event.key === 'k' || event.key === 'K') {
             var current_time = parseInt(document.getElementById('result_clip_player').currentTime)
+            console.log(current_time)
             rows = document.getElementsByTagName('tr');
             var ul = 0;
             for(var i =1;i<rows.length; i++)

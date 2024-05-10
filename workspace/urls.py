@@ -1,6 +1,6 @@
 from django.urls import path
 from .audio_audit_app import audio_audit, get_audio_file, test_timestamp_recorder, improve, save_file
-from .speech_maker import speech_maker, save_instance, regenerate, create_clip, combine_audio_instance, delete_selection, add_text_to_clip, fetch, fetch_image
+from .speech_maker import speech_maker, save_instance, regenerate, create_clip, create_yt_clip, combine_audio_instance, delete_selection, add_text_to_clip, fetch, fetch_image, save_text
 from .video_audit_app import video_audit
 from .views import home
 from .workspace import workspace, control_panel, generate_free_flow_video
@@ -25,6 +25,8 @@ urlpatterns = [
     path('speech_maker/api/fetch/', fetch, name = 'fetch'),
     path('speech_maker/api/fetch_image/', fetch_image, name = 'fetch_image'),
     path('speech_maker/api/create_clip/', create_clip, name = 'create_clip'),
+    path('speech_maker/api/create_yt_clip/', create_yt_clip, name = 'create_yt_clip'),
+    path('speech_maker/api/save_text/', save_text, name = 'save_text'),
     path('speech_maker/api/combine_audio_instance/', combine_audio_instance, name = 'combine_audio_instance'),
     path('speech_maker/api/delete_selection/', delete_selection, name = 'delete_selection'),
     path('speech_maker/api/add_text_to_clip/', add_text_to_clip, name = 'add_text_to_clip'),

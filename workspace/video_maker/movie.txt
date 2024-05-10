@@ -1,11 +1,11 @@
 0. RCA on image generation failure ✔️
-1. Code Commit
+1. Code Commit ✔️
 2. Cost Optimizations P0.
     - Use Chat GPT User interface rather than API for both text and text to audio
     - Add a Fallback to use API if the scraping does not work
 3. Text Modify feature ( Also show original)
 4. Glance original text.
-5. Youtube video comparer
+5. Youtube video comparer ✔️
 6. Upon clicking k, sidebar to open and the video should pause. 
     Side bar to also have a save feature, delete feature and replace with previous/next time feature.
     -- Additioanlly for each image there is an option to display x number of candidates.
@@ -24,7 +24,7 @@
     - Image embedding generation and Image formation part.
     - Whisper text formation
     - Audio generation API
-    - Video clip genearation
+    - Video clip generation
 17. Youtube/IGTV upload API
 17. Better video masking to avoid copyright and better ux
 18. Video clip enhancement
