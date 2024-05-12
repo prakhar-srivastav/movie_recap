@@ -331,6 +331,7 @@ class WolfyTTSMiddleware(object):
 
 
     def get_asr_and_wer(self, text, audio_file):
+        return "" , 0.0, None
         try:
             if text == "":
                 return "" , 0.0, None
@@ -421,10 +422,12 @@ class WolfyTTSMiddleware(object):
                                 'speaker' : data['speaker'].split('/')[-1].split('.')[0],
                                 'speech' : data['speech'],
                                 'asr_speech' : data['asr_speech'],
+                                'original_speech' : data['orginal_speech'],
                                 'wer' : data['wer'],
                                 'audio_url' : self.filesystem_to_media_url(speech_wav),
                                 'hash' : audio_file,
                                 'video_url' : self.filesystem_to_media_url(video_url) if video_url else None,
+                                'video_url_fs' : video_url,
                                 'all' : data
                             }
             
@@ -536,6 +539,11 @@ class WolfyTTSMiddleware(object):
                             silence = data.get('silence'),
                             rank = data.get('rank'),
                             chapter = data.get('chapter'),
+                            start = data.get('start'),
+                            duration = data.get('duration'),
+                            movie_timestamps = data.get('movie_timestamps'),
+                            original_movie_timestamps = data.get('original_movie_timestamps'),
+                            original_speech = data.get('original_speech')
                             )
         return self.get_context(set(_ids_))
 

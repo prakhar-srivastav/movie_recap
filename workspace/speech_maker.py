@@ -75,9 +75,16 @@ def speech_maker(request):
     else:
         create_yt_clip(data)
         result_yt_video_url = filesystem_to_media_url(result_yt_video_url)
+    
     print("RESULT_YT_VIDEO_URL", result_yt_video_url)
 
-
+    for key, value in content_context.items():
+        clip_file = value['video_url_fs']
+        if os.path.exists(clip_file):
+            continue
+        temp_data = data
+        temp_data['_ids_'] = key
+        create_clip(temp_data)
     
     return render(request,
                 'speech_maker/main.html',

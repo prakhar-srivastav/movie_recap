@@ -116,7 +116,7 @@ def add_text_to_clip(argument_map):
         
 
         txt_clip = (TextClip(text, font=defaults.preset_2_ttf,
-                    font_size=40, color='white', size=(1200, None),
+                    font_size=120, color='white', size=(1200, None),
                     kerning = 1, method='caption')
                             .with_position(position_of_text, relative = True)
                             .set_start(start_time)
@@ -276,8 +276,9 @@ def create_clip(argument_map):
     if timestamp is None:
         result_file = os.path.join(workspace_folder, 
                     os.path.join(workspace,'movie/result.mp4'))
-    clip.fps = 18
-    clip.write_videofile(result_file, codec='h264_nvenc', preset='fast')
+    clip.fps = 21
+    clip.write_videofile(result_file)
+    clip.write_videofile("output_video.mp4", preset='fast')
 
     return result_file
 

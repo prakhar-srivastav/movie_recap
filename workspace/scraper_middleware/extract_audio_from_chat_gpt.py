@@ -14,7 +14,7 @@ def increase_speed(file_path, factor, time_to_contraint):
     faster_audio.export(file_path, format="wav")
 
 
-def extract_audio_from_chat_gpt(text, file_path, speaker_wav = 'onyx',speed_multiply = 1.2, time_to_contraint = None):
+def extract_audio_from_chat_gpt(text, file_path, speaker_wav = 'nova',speed_multiply = 1.0, time_to_contraint = None):
     from pathlib import Path
     from openai import OpenAI
     client = OpenAI(api_key = 'sk-proj-L8a41e1mHEpmUjFK4wc0T3BlbkFJ7v9ugFqkIL01Hatfst3T')
@@ -25,7 +25,7 @@ def extract_audio_from_chat_gpt(text, file_path, speaker_wav = 'onyx',speed_mult
     voice=speaker_wav,
     )
     response.stream_to_file(file_path)
-    increase_speed(file_path,speed_multiply,time_to_contraint)
+    # increase_speed(file_path,speed_multiply,time_to_contraint)
     time.sleep(20)
     # from moviepy.editor import AudioFileClip
     # audio_clip = AudioFileClip(file_path)
