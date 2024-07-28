@@ -1,5 +1,9 @@
 # movie_recap
 
+It utilizes APIs like TTS (Text-to-Speech), HBAPI, and OpenAI's completion API for generating summaries. MoviePy is employed for video editing, ensuring efficient consolidation of movie clips, while Clip is used for semantic search to enhance the summarization process. This combination of tools and APIs enables the creation of detailed and engaging movie summaries. It has many audit feature as well. You can explore more on the channel [here](https://www.youtube.com/channel/UC7moZjrHEEtrv8AFGmAnokw).'
+
+
+
 Test Case 1
 QuotesGPTMiddleware
 
