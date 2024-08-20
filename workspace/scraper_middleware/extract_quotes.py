@@ -5,9 +5,9 @@ from bs4 import BeautifulSoup
 from playwright_stealth import stealth_sync
 
 def run(playwright, author_url):
-    server = '50.118.217.215:60000'
-    username = "upstreamcommerce2"
-    password = "4Y6zkSMT8V"
+    server =  # SERVER
+    username = # USER
+    password = # PASS
     proxy_options = {
         'server' : server,
         'username' : username,
